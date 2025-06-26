@@ -1,8 +1,6 @@
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -11,17 +9,9 @@ import org.apache.hadoop.mapreduce.Mapper;
 public class DailyEnergyMapper extends Mapper<LongWritable, Text, Text, Text> {
     
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssXXX");
-    private static final String[] RENEWABLE_SOURCES = {
-        "biomass_generation",
-        "geothermal_generation", 
-        "hydro_run_of_river_and_poundage_generation",
-        "hydro_water_reservoir_generation",
-        "marine_generation",
-        "other_renewable_generation",
-        "solar_generation",
-        "wind_offshore_generation",
-        "wind_onshore_generation"
-    };
+    
+    // 0-indexed column positions for renewable energy sources
+    private static final int[] RENEWABLE_COLUMNS = {1, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20};
     
     @Override
     public void map(LongWritable key, Text value, Context context) 
@@ -31,7 +21,7 @@ public class DailyEnergyMapper extends Mapper<LongWritable, Text, Text, Text> {
         String[] fields = line.split(",");
         
         // Skip header row
-        if (fields[0].equals("time") || fields.length < 2) {
+        if (fields[0].equals("time") || fields.length < 21) {
             return;
         }
         
@@ -41,10 +31,16 @@ public class DailyEnergyMapper extends Mapper<LongWritable, Text, Text, Text> {
             LocalDateTime dateTime = LocalDateTime.parse(timestamp, FORMATTER);
             String dailyKey = dateTime.toLocalDate().toString();
             
-            // Create energy values string
+            // Create energy values string for the 12 renewable sources
             StringBuilder energyValues = new StringBuilder();
-            for (int i = 1; i <= 9 && i < fields.length; i++) {
-                String energyValue = fields[i].trim();
+            for (int i = 0; i < RENEWABLE_COLUMNS.length; i++) {
+                int columnIndex = RENEWABLE_COLUMNS[i];
+                String energyValue = "";
+                
+                if (columnIndex < fields.length) {
+                    energyValue = fields[columnIndex].trim();
+                }
+                
                 if (energyValue.isEmpty() || energyValue.equals("null")) {
                     energyValues.append("0.0");
                 } else {
@@ -55,7 +51,10 @@ public class DailyEnergyMapper extends Mapper<LongWritable, Text, Text, Text> {
                         energyValues.append("0.0");
                     }
                 }
-                if (i < 9) energyValues.append(",");
+                
+                if (i < RENEWABLE_COLUMNS.length - 1) {
+                    energyValues.append(",");
+                }
             }
             
             context.write(new Text(dailyKey), new Text(energyValues.toString()));
