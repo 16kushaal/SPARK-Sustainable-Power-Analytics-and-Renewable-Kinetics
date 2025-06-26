@@ -1,0 +1,11 @@
+Energy Sources Order (9 renewable sources):
+
+biomass_generation
+geothermal_generation
+hydro_run_of_river_and_poundage_generation
+hydro_water_reservoir_generation
+marine_generation
+other_renewable_generation
+solar_generation
+wind_offshore_generation
+wind_onshore_generation
