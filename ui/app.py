@@ -63,14 +63,84 @@ st.markdown("""
         border: 1px solid #3a3a3a !important;
         color: #e0e0e0 !important;
     }
+
+    .stCheckbox > div > div {
+        background-color: #1e1e1e !important;
+        border: 1px solid #3a3a3a !important;
+        color: #e0e0e0 !important;
+    }
+
+    .stCheckbox > div > div > label {
+        color: #e0e0e0 !important;
+        font-size: 0.9rem !important;
+    }
+
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+
+    .metric-card-compact {
+        background-color: #1e1e1e;
+        padding: 0.75rem;
+        border-radius: 6px;
+        border-left: 3px solid #555;
+        margin: 0.5rem 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# Generate sample data
+# Load renewable and non-renewable energy data
 @st.cache_data
-def generate_sample_data():
+def load_energy_data():
+    """Load energy data from CSV files"""
+    try:
+        # Load daily renewable data
+        daily_renewable = pd.read_csv('./mapreduce/renewable/dailyenergy/daily.csv')
+        daily_renewable['Date'] = pd.to_datetime(daily_renewable['time'], format='%d-%m-%y')
+        
+        # Load weekly renewable data
+        weekly_renewable = pd.read_csv('./mapreduce/renewable/weeklyenergy/weekly.csv')
+        
+        # Load monthly renewable data
+        monthly_renewable = pd.read_csv('./mapreduce/renewable/monthlyenergy/monthly.csv')
+        
+        # Load daily non-renewable data
+        daily_nonrenewable = pd.read_csv('./mapreduce/nonrenewable/dailyenergy/daily.csv')
+        daily_nonrenewable['Date'] = pd.to_datetime(daily_nonrenewable['time'], format='%d-%m-%y')
+        
+        # Load weekly non-renewable data
+        weekly_nonrenewable = pd.read_csv('./mapreduce/nonrenewable/weeklyenergy/weekly.csv')
+        
+        # Load monthly non-renewable data
+        monthly_nonrenewable = pd.read_csv('./mapreduce/nonrenewable/monthlyenergy/monthly.csv')
+        
+        # Load fossil fuel dependency data
+        fossil_fuel_dependency = pd.read_csv('./mapreduce/FossilFuelDependency/ffd.csv')
+        # Strip whitespace from column names to handle any leading/trailing spaces
+        fossil_fuel_dependency.columns = fossil_fuel_dependency.columns.str.strip()
+        
+        return {
+            'daily_renewable': daily_renewable,
+            'weekly_renewable': weekly_renewable,
+            'monthly_renewable': monthly_renewable,
+            'daily_nonrenewable': daily_nonrenewable,
+            'weekly_nonrenewable': weekly_nonrenewable,
+            'monthly_nonrenewable': monthly_nonrenewable,
+            'fossil_fuel_dependency': fossil_fuel_dependency
+        }
+    except FileNotFoundError as e:
+        st.error(f"Error loading data files: {e}")
+        return None
+
+# Generate sample data for ML analysis
+@st.cache_data
+def generate_sample_ml_data():
     # Generate sample load forecast data
-    dates = pd.date_range(start='2023-01-01', end='2024-12-31', freq='D')
+    dates = pd.date_range(start='2015-01-01', end='2018-12-31', freq='D')
     load_data = pd.DataFrame({
         'Date': dates,
         'Actual_Load': np.random.normal(1000, 200, len(dates)) + 100 * np.sin(np.arange(len(dates)) * 2 * np.pi / 365),
@@ -78,30 +148,59 @@ def generate_sample_data():
         'Temperature': np.random.normal(20, 10, len(dates)),
         'Humidity': np.random.uniform(30, 90, len(dates))
     })
-    
-    # Generate renewable energy data
-    renewable_data = pd.DataFrame({
-        'Date': dates,
-        'Solar_Generation': np.random.uniform(0, 500, len(dates)) * (np.sin(np.arange(len(dates)) * 2 * np.pi / 365) + 1),
-        'Wind_Generation': np.random.uniform(0, 300, len(dates)),
-        'Daylight_Hours': 8 + 4 * np.sin(np.arange(len(dates)) * 2 * np.pi / 365),
-        'Wind_Speed': np.random.uniform(2, 15, len(dates)),
-        'Solar_Irradiance': np.random.uniform(100, 1000, len(dates))
-    })
-    
-    # Generate non-renewable data
-    non_renewable_data = pd.DataFrame({
-        'Date': dates,
-        'Coal_Generation': np.random.uniform(200, 800, len(dates)),
-        'Natural_Gas_Generation': np.random.uniform(150, 600, len(dates)),
-        'Nuclear_Generation': np.random.uniform(300, 500, len(dates)),
-        'Oil_Generation': np.random.uniform(50, 200, len(dates))
-    })
-    
-    return load_data, renewable_data, non_renewable_data
+    return load_data
 
 # Load data
-load_data, renewable_data, non_renewable_data = generate_sample_data()
+energy_data = load_energy_data()
+ml_load_data = generate_sample_ml_data()
+
+# Define renewable energy columns
+RENEWABLE_COLUMNS = [
+    'generation biomass',
+    'generation geothermal',
+    'generation hydro pumped storage consumption',
+    'generation hydro run-of-river and poundage',
+    'generation hydro water reservoir',
+    'generation marine',
+    'generation nuclear',
+    'generation other renewable',
+    'generation solar',
+    'generation waste',
+    'generation wind offshore',
+    ' generation wind onshore'  # Note the leading space
+]
+
+# Define non-renewable energy columns
+NONRENEWABLE_COLUMNS = [
+    'generation fossil brown coal/lignite',
+    'generation fossil coal-derived gas',
+    'generation fossil gas',
+    'generation fossil hard coal',
+    'generation fossil oil',
+    'generation fossil oil shale',
+    'generation fossil peat'
+]
+
+# Define fossil fuel dependency columns
+FOSSIL_FUEL_DEPENDENCY_COLUMNS = [
+    'avgLoad',
+    'avgTotalFossil',  # Now without leading space after stripping
+    'avgTotalGeneration',
+    'fossilDependencyPercent',
+    'avgBrownCoal',
+    'avgCoalGas',
+    'avgNaturalGas',
+    'avgHardCoal',
+    'avgOil',
+    'avgOilShale',
+    'avgPeat',
+    'brownCoalPercent',
+    'coalGasPercent',
+    'naturalGasPercent',
+    'hardCoalPercent',
+    'oilPercent',
+    'count'
+]
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
@@ -195,6 +294,11 @@ elif page == "📊 Data Analysis":
     </div>
     """, unsafe_allow_html=True)
     
+    # Check if data is loaded
+    if energy_data is None:
+        st.error("❌ Unable to load energy data. Please check if the CSV files are available in the correct directory structure.")
+        st.stop()
+    
     # Analysis type selection
     st.markdown('<h2 class="section-header">⚙️ Analysis Configuration</h2>', unsafe_allow_html=True)
     
@@ -203,211 +307,1123 @@ elif page == "📊 Data Analysis":
         ["Renewables", "Non-Renewables", "Fossil Fuel Dependency"]
     )
     
-    # Time range selection
-    col1, col2 = st.columns(2)
-    with col1:
-        start_date = st.date_input("Start Date", datetime(2024, 1, 1), key="data_start")
-    with col2:
-        end_date = st.date_input("End Date", datetime(2024, 12, 31), key="data_end")
+    # Time range selection with validation (only for Renewables and Non-Renewables)
+    if analysis_type in ["Renewables", "Non-Renewables"]:
+        col1, col2 = st.columns(2)
+        with col1:
+            start_date = st.date_input("Start Date", datetime(2015, 1, 1), key="data_start")
+        with col2:
+            end_date = st.date_input("End Date", datetime(2018, 12, 31), key="data_end")
+        
+        # Validate date range
+        min_date = datetime(2015, 1, 1).date()
+        max_date = datetime(2018, 12, 31).date()
+        
+        if start_date < min_date or end_date > max_date or start_date > max_date or end_date < min_date:
+            st.markdown("""
+            <div style="background-color: #ff4444; color: white; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                <strong>⚠️ Invalid Date Range</strong><br>
+                Please choose dates between <strong>01/01/2015</strong> and <strong>31/12/2018</strong>
+            </div>
+            """, unsafe_allow_html=True)
+            st.stop()
+        
+        # Validate that start_date is before end_date
+        if start_date >= end_date:
+            st.markdown("""
+            <div style="background-color: #ff4444; color: white; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                <strong>⚠️ Invalid Date Range</strong><br>
+                Start date must be <strong>before</strong> end date
+            </div>
+            """, unsafe_allow_html=True)
+            st.stop()
     
     if analysis_type == "Renewables":
         st.markdown('<h2 class="section-header">🌱 Renewable Energy Analysis</h2>', unsafe_allow_html=True)
         
-        # Filter renewable data
-        mask = (renewable_data['Date'] >= pd.to_datetime(start_date)) & (renewable_data['Date'] <= pd.to_datetime(end_date))
-        filtered_renewable = renewable_data.loc[mask]
+        # Chart type selection
+        col1, col2 = st.columns(2)
+        with col1:
+            chart_type = st.selectbox("Chart Type:", ["Line Chart", "Stacked Area Chart", "Pie Chart"])
+        with col2:
+            time_resolution = st.selectbox("Time Resolution:", ["Daily", "Weekly", "Monthly"])
         
-        # Comparison selection
-        comparison_type = st.selectbox(
-            "Select Comparison:",
-            ["Solar vs Daylight Hours", "Solar vs Wind Generation", "Wind vs Wind Speed", "Solar vs Irradiance"]
-        )
+        # Get the appropriate dataset and convert time to Date
+        if time_resolution == "Daily":
+            renewable_df = energy_data['daily_renewable']
+            # Date column already created in load_energy_data()
+        elif time_resolution == "Weekly":
+            renewable_df = energy_data['weekly_renewable']
+            # Convert weekly time format (e.g., "2015-W01") to datetime
+            # Use a simpler approach: extract year and week, then create datetime
+            def parse_iso_week(week_str):
+                year, week = week_str.split('-W')
+                # Create a datetime for the first day of the year, then add weeks
+                first_day = pd.Timestamp(year=int(year), month=1, day=1)
+                # Find the first Monday of the year
+                while first_day.weekday() != 0:  # Monday is 0
+                    first_day += pd.Timedelta(days=1)
+                # Add the weeks
+                return first_day + pd.Timedelta(weeks=int(week)-1)
+            
+            renewable_df['Date'] = renewable_df['time'].apply(parse_iso_week)
+        else:  # Monthly
+            renewable_df = energy_data['monthly_renewable']
+            # Convert monthly time format (e.g., "2015-01") to datetime
+            renewable_df['Date'] = pd.to_datetime(renewable_df['time'] + '-01', format='%Y-%m-%d')
         
-        if comparison_type == "Solar vs Daylight Hours":
-            fig = px.scatter(
-                filtered_renewable, 
-                x='Daylight_Hours', 
-                y='Solar_Generation',
-                color='Solar_Irradiance',
-                title="Solar Generation vs Daylight Hours",
-                labels={'Daylight_Hours': 'Daylight Hours', 'Solar_Generation': 'Solar Generation (MW)'}
+        # Column selection
+        st.markdown('<h3 class="section-header">📋 Select Energy Sources</h3>', unsafe_allow_html=True)
+        
+        # Filter columns that exist in the dataset
+        available_columns = [col for col in RENEWABLE_COLUMNS if col in renewable_df.columns]
+        
+        if not available_columns:
+            st.error("❌ No renewable energy columns found in the dataset.")
+            st.stop()
+        
+        # Initialize session state for selections
+        if 'renewable_selections' not in st.session_state:
+            st.session_state.renewable_selections = []
+        
+        # Add Select All and Clear All buttons
+        st.markdown("<br>", unsafe_allow_html=True)  # Add spacing to move buttons down
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+        with col1:
+            if st.button("Select All", key="select_all_renewable"):
+                st.session_state.renewable_selections = available_columns.copy()
+                st.rerun()
+        with col2:
+            if st.button("Clear All", key="clear_all_renewable"):
+                st.session_state.renewable_selections = []
+                st.rerun()
+        with col3:
+            pass  # Empty column for symmetry
+        with col4:
+            pass  # Empty column for symmetry
+        
+        # Use a more organized grid layout for checkboxes
+        if len(available_columns) <= 6:
+            # For 6 or fewer columns, use 3 columns
+            col1, col2, col3 = st.columns(3)
+            
+            for i, column in enumerate(available_columns):
+                with [col1, col2, col3][i % 3]:
+                    is_checked = column in st.session_state.renewable_selections
+                    if st.checkbox(column.replace('generation ', '').title(), 
+                                 value=is_checked, 
+                                 key=f"renewable_{i}"):
+                        if column not in st.session_state.renewable_selections:
+                            st.session_state.renewable_selections.append(column)
+                    else:
+                        if column in st.session_state.renewable_selections:
+                            st.session_state.renewable_selections.remove(column)
+        else:
+            # For more than 6 columns, use 4 columns
+            col1, col2, col3, col4 = st.columns(4)
+            
+            for i, column in enumerate(available_columns):
+                with [col1, col2, col3, col4][i % 4]:
+                    is_checked = column in st.session_state.renewable_selections
+                    if st.checkbox(column.replace('generation ', '').title(), 
+                                 value=is_checked, 
+                                 key=f"renewable_{i}"):
+                        if column not in st.session_state.renewable_selections:
+                            st.session_state.renewable_selections.append(column)
+                    else:
+                        if column in st.session_state.renewable_selections:
+                            st.session_state.renewable_selections.remove(column)
+        
+        selected_columns = st.session_state.renewable_selections
+        
+        if not selected_columns:
+            st.warning("⚠️ Please select at least one energy source to analyze.")
+            st.stop()
+        
+        # Filter data by date range
+        mask = (renewable_df['Date'] >= pd.to_datetime(start_date)) & (renewable_df['Date'] <= pd.to_datetime(end_date))
+        filtered_df = renewable_df.loc[mask]
+        
+        # Create visualizations
+        if chart_type == "Line Chart":
+            fig = go.Figure()
+            
+            for column in selected_columns:
+                fig.add_trace(go.Scatter(
+                    x=filtered_df['Date'],
+                    y=filtered_df[column],
+                    mode='lines',
+                    name=column.replace('generation ', '').title(),
+                    line=dict(width=2)
+                ))
+            
+            fig.update_layout(
+                title=f'Renewable Energy Generation - {time_resolution} ({chart_type})',
+                xaxis_title='Time',
+                yaxis_title='Generation (MW)',
+                template='plotly_dark',
+                hovermode='x unified'
             )
             
-        elif comparison_type == "Solar vs Wind Generation":
-            fig = make_subplots(specs=[[{"secondary_y": True}]])
-            fig.add_trace(
-                go.Scatter(x=filtered_renewable['Date'], y=filtered_renewable['Solar_Generation'], name='Solar Generation'),
-                secondary_y=False,
-            )
-            fig.add_trace(
-                go.Scatter(x=filtered_renewable['Date'], y=filtered_renewable['Wind_Generation'], name='Wind Generation'),
-                secondary_y=True,
-            )
-            fig.update_yaxes(title_text="Solar Generation (MW)", secondary_y=False)
-            fig.update_yaxes(title_text="Wind Generation (MW)", secondary_y=True)
-            fig.update_layout(title_text="Solar vs Wind Generation Over Time")
+        elif chart_type == "Stacked Area Chart":
+            fig = go.Figure()
             
-        elif comparison_type == "Wind vs Wind Speed":
-            fig = px.scatter(
-                filtered_renewable, 
-                x='Wind_Speed', 
-                y='Wind_Generation',
-                title="Wind Generation vs Wind Speed",
-                labels={'Wind_Speed': 'Wind Speed (m/s)', 'Wind_Generation': 'Wind Generation (MW)'}
+            # Define colors for the stacked area chart
+            colors = px.colors.qualitative.Set3
+            
+            for i, column in enumerate(selected_columns):
+                fig.add_trace(go.Scatter(
+                    x=filtered_df['Date'],
+                    y=filtered_df[column],
+                    mode='lines',
+                    stackgroup='one',
+                    name=column.replace('generation ', '').title(),
+                    line=dict(width=0),
+                    fillcolor=colors[i % len(colors)]
+                ))
+            
+            fig.update_layout(
+                title=f'Renewable Energy Generation - {time_resolution} (Stacked Area)',
+                xaxis_title='Time',
+                yaxis_title='Generation (MW)',
+                template='plotly_dark'
             )
             
-        else:  # Solar vs Irradiance
-            fig = px.scatter(
-                filtered_renewable, 
-                x='Solar_Irradiance', 
-                y='Solar_Generation',
-                title="Solar Generation vs Solar Irradiance",
-                labels={'Solar_Irradiance': 'Solar Irradiance (W/m²)', 'Solar_Generation': 'Solar Generation (MW)'}
+        else:  # Pie Chart
+            # Calculate total generation for each selected column
+            totals = []
+            labels = []
+            
+            for column in selected_columns:
+                total = filtered_df[column].sum()
+                totals.append(total)
+                labels.append(column.replace('generation ', '').title())
+            
+            fig = px.pie(
+                values=totals,
+                names=labels,
+                title=f'Renewable Energy Mix - {time_resolution}'
             )
+            fig.update_layout(template='plotly_dark')
         
-        fig.update_layout(template='plotly_dark')
         st.plotly_chart(fig, use_container_width=True)
         
         # Summary statistics
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Avg Solar Generation", f"{filtered_renewable['Solar_Generation'].mean():.1f} MW")
-        with col2:
-            st.metric("Avg Wind Generation", f"{filtered_renewable['Wind_Generation'].mean():.1f} MW")
-        with col3:
-            st.metric("Total Renewable", f"{(filtered_renewable['Solar_Generation'] + filtered_renewable['Wind_Generation']).mean():.1f} MW")
+        st.markdown('<h3 class="section-header">📊 Summary Statistics</h3>', unsafe_allow_html=True)
+        
+        # Use expandable sections for better organization
+        with st.expander("📈 View Summary Statistics", expanded=True):
+            # Create a responsive grid layout
+            if len(selected_columns) <= 3:
+                # For 3 or fewer, use columns
+                cols = st.columns(len(selected_columns))
+                for i, column in enumerate(selected_columns):
+                    with cols[i]:
+                        avg_generation = filtered_df[column].mean()
+                        total_generation = filtered_df[column].sum()
+                        max_generation = filtered_df[column].max()
+                        min_generation = filtered_df[column].min()
+                        
+                        st.markdown(f"""
+                        <div style="
+                            background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+                            padding: 1.25rem;
+                            border-radius: 12px;
+                            margin: 0.75rem 0;
+                            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+                            border: 1px solid #3a3a3a;
+                            position: relative;
+                            overflow: hidden;
+                        ">
+                            <div style="
+                                background: rgba(255,255,255,0.05);
+                                padding: 0.5rem;
+                                border-radius: 8px;
+                                margin-bottom: 1rem;
+                                border: 1px solid #4a4a4a;
+                            ">
+                                <h4 style="
+                                    margin: 0;
+                                    font-size: 1.1rem;
+                                    color: #e0e0e0;
+                                    font-weight: 700;
+                                    text-align: center;
+                                ">{column.replace('generation ', '').title()}</h4>
+                            </div>
+                            <div style="
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 0.75rem;
+                                margin-bottom: 0.75rem;
+                            ">
+                                <div style="
+                                    background: rgba(255,255,255,0.08);
+                                    padding: 0.75rem;
+                                    border-radius: 8px;
+                                    text-align: center;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_generation:.1f}</p>
+                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg (MW)</p>
+                                </div>
+                                <div style="
+                                    background: rgba(255,255,255,0.08);
+                                    padding: 0.75rem;
+                                    border-radius: 8px;
+                                    text-align: center;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_generation:.1f}</p>
+                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total (MW)</p>
+                                </div>
+                            </div>
+                            <div style="
+                                display: flex;
+                                justify-content: space-between;
+                                background: rgba(255,255,255,0.05);
+                                padding: 0.5rem;
+                                border-radius: 6px;
+                                border: 1px solid #4a4a4a;
+                            ">
+                                <div style="text-align: center;">
+                                    <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
+                                    <br>
+                                    <span style="font-size: 0.8rem; color: #cccccc;">{max_generation:.1f}</span>
+                                </div>
+                                <div style="text-align: center;">
+                                    <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
+                                    <br>
+                                    <span style="font-size: 0.8rem; color: #cccccc;">{min_generation:.1f}</span>
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+            else:
+                # For more than 3, use a scrollable container with fixed height
+                st.markdown("""
+                <style>
+                .metrics-container {
+                    max-height: 500px;
+                    overflow-y: auto;
+                    padding: 1rem;
+                    background: linear-gradient(135deg, #667eea, #764ba2);
+                    border-radius: 12px;
+                    border: 1px solid rgba(255,255,255,0.2);
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
+                # Group into rows of 3
+                for i in range(0, len(selected_columns), 3):
+                    group = selected_columns[i:i+3]
+                    cols = st.columns(len(group))
+                    
+                    for j, column in enumerate(group):
+                        with cols[j]:
+                            avg_generation = filtered_df[column].mean()
+                            total_generation = filtered_df[column].sum()
+                            max_generation = filtered_df[column].max()
+                            min_generation = filtered_df[column].min()
+                            
+                            st.markdown(f"""
+                            <div style="
+                                background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+                                padding: 1.25rem;
+                                border-radius: 12px;
+                                margin: 0.75rem 0;
+                                box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+                                border: 1px solid #3a3a3a;
+                                position: relative;
+                                overflow: hidden;
+                            ">
+                                <div style="
+                                    background: rgba(255,255,255,0.05);
+                                    padding: 0.5rem;
+                                    border-radius: 8px;
+                                    margin-bottom: 1rem;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <h4 style="
+                                        margin: 0;
+                                        font-size: 1.1rem;
+                                        color: #e0e0e0;
+                                        font-weight: 700;
+                                        text-align: center;
+                                    ">{column.replace('generation ', '').title()}</h4>
+                                </div>
+                                <div style="
+                                    display: grid;
+                                    grid-template-columns: 1fr 1fr;
+                                    gap: 0.75rem;
+                                    margin-bottom: 0.75rem;
+                                ">
+                                    <div style="
+                                        background: rgba(255,255,255,0.08);
+                                        padding: 0.75rem;
+                                        border-radius: 8px;
+                                        text-align: center;
+                                        border: 1px solid #4a4a4a;
+                                    ">
+                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_generation:.1f}</p>
+                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg (MW)</p>
+                                    </div>
+                                    <div style="
+                                        background: rgba(255,255,255,0.08);
+                                        padding: 0.75rem;
+                                        border-radius: 8px;
+                                        text-align: center;
+                                        border: 1px solid #4a4a4a;
+                                    ">
+                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_generation:.1f}</p>
+                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total (MW)</p>
+                                    </div>
+                                </div>
+                                <div style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    background: rgba(255,255,255,0.05);
+                                    padding: 0.5rem;
+                                    border-radius: 6px;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <div style="text-align: center;">
+                                        <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
+                                        <br>
+                                        <span style="font-size: 0.8rem; color: #cccccc;">{max_generation:.1f}</span>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
+                                        <br>
+                                        <span style="font-size: 0.8rem; color: #cccccc;">{min_generation:.1f}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
     
     elif analysis_type == "Non-Renewables":
         st.markdown('<h2 class="section-header">🏭 Non-Renewable Energy Analysis</h2>', unsafe_allow_html=True)
         
-        # Filter non-renewable data
-        mask = (non_renewable_data['Date'] >= pd.to_datetime(start_date)) & (non_renewable_data['Date'] <= pd.to_datetime(end_date))
-        filtered_non_renewable = non_renewable_data.loc[mask]
+        # Chart type selection
+        col1, col2 = st.columns(2)
+        with col1:
+            chart_type = st.selectbox("Chart Type:", ["Line Chart", "Stacked Area Chart", "Pie Chart"], key="nonrenewable_chart")
+        with col2:
+            time_resolution = st.selectbox("Time Resolution:", ["Daily", "Weekly", "Monthly"], key="nonrenewable_time")
         
-        # Stacked area chart
-        fig = go.Figure()
+        # Get the appropriate dataset and convert time to Date
+        if time_resolution == "Daily":
+            nonrenewable_df = energy_data['daily_nonrenewable']
+            # Date column already created in load_energy_data()
+        elif time_resolution == "Weekly":
+            nonrenewable_df = energy_data['weekly_nonrenewable']
+            # Convert weekly time format (e.g., "2015-W01") to datetime
+            def parse_iso_week(week_str):
+                year, week = week_str.split('-W')
+                # Create a datetime for the first day of the year, then add weeks
+                first_day = pd.Timestamp(year=int(year), month=1, day=1)
+                # Find the first Monday of the year
+                while first_day.weekday() != 0:  # Monday is 0
+                    first_day += pd.Timedelta(days=1)
+                # Add the weeks
+                return first_day + pd.Timedelta(weeks=int(week)-1)
+            
+            nonrenewable_df['Date'] = nonrenewable_df['time'].apply(parse_iso_week)
+        else:  # Monthly
+            nonrenewable_df = energy_data['monthly_nonrenewable']
+            # Convert monthly time format (e.g., "2015-01") to datetime
+            nonrenewable_df['Date'] = pd.to_datetime(nonrenewable_df['time'] + '-01', format='%Y-%m-%d')
         
-        fig.add_trace(go.Scatter(
-            x=filtered_non_renewable['Date'], 
-            y=filtered_non_renewable['Coal_Generation'],
-            mode='lines',
-            stackgroup='one',
-            name='Coal',
-            line=dict(color='#8b4513')
-        ))
+        # Column selection
+        st.markdown('<h3 class="section-header">📋 Select Energy Sources</h3>', unsafe_allow_html=True)
         
-        fig.add_trace(go.Scatter(
-            x=filtered_non_renewable['Date'], 
-            y=filtered_non_renewable['Natural_Gas_Generation'],
-            mode='lines',
-            stackgroup='one',
-            name='Natural Gas',
-            line=dict(color='#4682b4')
-        ))
+        # Filter columns that exist in the dataset
+        available_columns = [col for col in NONRENEWABLE_COLUMNS if col in nonrenewable_df.columns]
         
-        fig.add_trace(go.Scatter(
-            x=filtered_non_renewable['Date'], 
-            y=filtered_non_renewable['Nuclear_Generation'],
-            mode='lines',
-            stackgroup='one',
-            name='Nuclear',
-            line=dict(color='#32cd32')
-        ))
+        if not available_columns:
+            st.error("❌ No non-renewable energy columns found in the dataset.")
+            st.stop()
         
-        fig.add_trace(go.Scatter(
-            x=filtered_non_renewable['Date'], 
-            y=filtered_non_renewable['Oil_Generation'],
-            mode='lines',
-            stackgroup='one',
-            name='Oil',
-            line=dict(color='#ff4500')
-        ))
+        # Initialize session state for selections
+        if 'nonrenewable_selections' not in st.session_state:
+            st.session_state.nonrenewable_selections = []
         
-        fig.update_layout(
-            title='Non-Renewable Energy Generation Over Time',
-            xaxis_title='Date',
-            yaxis_title='Generation (MW)',
-            template='plotly_dark'
-        )
+        # Add Select All and Clear All buttons
+        st.markdown("<br>", unsafe_allow_html=True)  # Add spacing to move buttons down
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+        with col1:
+            if st.button("Select All", key="select_all_nonrenewable"):
+                st.session_state.nonrenewable_selections = available_columns.copy()
+                st.rerun()
+        with col2:
+            if st.button("Clear All", key="clear_all_nonrenewable"):
+                st.session_state.nonrenewable_selections = []
+                st.rerun()
+        with col3:
+            pass  # Empty column for symmetry
+        with col4:
+            pass  # Empty column for symmetry
+        
+        # Use a more organized grid layout for checkboxes
+        if len(available_columns) <= 6:
+            # For 6 or fewer columns, use 3 columns
+            col1, col2, col3 = st.columns(3)
+            
+            for i, column in enumerate(available_columns):
+                with [col1, col2, col3][i % 3]:
+                    is_checked = column in st.session_state.nonrenewable_selections
+                    if st.checkbox(column.replace('generation fossil ', '').title(), 
+                                 value=is_checked, 
+                                 key=f"nonrenewable_{i}"):
+                        if column not in st.session_state.nonrenewable_selections:
+                            st.session_state.nonrenewable_selections.append(column)
+                    else:
+                        if column in st.session_state.nonrenewable_selections:
+                            st.session_state.nonrenewable_selections.remove(column)
+        else:
+            # For more than 6 columns, use 4 columns
+            col1, col2, col3, col4 = st.columns(4)
+            
+            for i, column in enumerate(available_columns):
+                with [col1, col2, col3, col4][i % 4]:
+                    is_checked = column in st.session_state.nonrenewable_selections
+                    if st.checkbox(column.replace('generation fossil ', '').title(), 
+                                 value=is_checked, 
+                                 key=f"nonrenewable_{i}"):
+                        if column not in st.session_state.nonrenewable_selections:
+                            st.session_state.nonrenewable_selections.append(column)
+                    else:
+                        if column in st.session_state.nonrenewable_selections:
+                            st.session_state.nonrenewable_selections.remove(column)
+        
+        selected_columns = st.session_state.nonrenewable_selections
+        
+        if not selected_columns:
+            st.warning("⚠️ Please select at least one energy source to analyze.")
+            st.stop()
+        
+        # Filter data by date range
+        mask = (nonrenewable_df['Date'] >= pd.to_datetime(start_date)) & (nonrenewable_df['Date'] <= pd.to_datetime(end_date))
+        filtered_df = nonrenewable_df.loc[mask]
+        
+        # Create visualizations
+        if chart_type == "Line Chart":
+            fig = go.Figure()
+            
+            for column in selected_columns:
+                fig.add_trace(go.Scatter(
+                    x=filtered_df['Date'],
+                    y=filtered_df[column],
+                    mode='lines',
+                    name=column.replace('generation fossil ', '').title(),
+                    line=dict(width=2)
+                ))
+            
+            fig.update_layout(
+                title=f'Non-Renewable Energy Generation - {time_resolution} ({chart_type})',
+                xaxis_title='Time',
+                yaxis_title='Generation (MW)',
+                template='plotly_dark',
+                hovermode='x unified'
+            )
+            
+        elif chart_type == "Stacked Area Chart":
+            fig = go.Figure()
+            
+            # Define colors for the stacked area chart
+            colors = px.colors.qualitative.Set3
+            
+            for i, column in enumerate(selected_columns):
+                fig.add_trace(go.Scatter(
+                    x=filtered_df['Date'],
+                    y=filtered_df[column],
+                    mode='lines',
+                    stackgroup='one',
+                    name=column.replace('generation fossil ', '').title(),
+                    line=dict(width=0),
+                    fillcolor=colors[i % len(colors)]
+                ))
+            
+            fig.update_layout(
+                title=f'Non-Renewable Energy Generation - {time_resolution} (Stacked Area)',
+                xaxis_title='Time',
+                yaxis_title='Generation (MW)',
+                template='plotly_dark'
+            )
+            
+        else:  # Pie Chart
+            # Calculate total generation for each selected column
+            totals = []
+            labels = []
+            
+            for column in selected_columns:
+                total = filtered_df[column].sum()
+                totals.append(total)
+                labels.append(column.replace('generation fossil ', '').title())
+            
+            fig = px.pie(
+                values=totals,
+                names=labels,
+                title=f'Non-Renewable Energy Mix - {time_resolution}'
+            )
+            fig.update_layout(template='plotly_dark')
         
         st.plotly_chart(fig, use_container_width=True)
         
-        # Pie chart for composition
-        total_generation = filtered_non_renewable[['Coal_Generation', 'Natural_Gas_Generation', 'Nuclear_Generation', 'Oil_Generation']].sum()
+        # Summary statistics
+        st.markdown('<h3 class="section-header">📊 Summary Statistics</h3>', unsafe_allow_html=True)
         
-        fig_pie = px.pie(
-            values=total_generation.values,
-            names=total_generation.index,
-            title="Non-Renewable Energy Mix"
-        )
-        fig_pie.update_layout(template='plotly_dark')
-        st.plotly_chart(fig_pie, use_container_width=True)
+        # Use expandable sections for better organization
+        with st.expander("📈 View Summary Statistics", expanded=True):
+            # Create a responsive grid layout
+            if len(selected_columns) <= 3:
+                # For 3 or fewer, use columns
+                cols = st.columns(len(selected_columns))
+                for i, column in enumerate(selected_columns):
+                    with cols[i]:
+                        avg_generation = filtered_df[column].mean()
+                        total_generation = filtered_df[column].sum()
+                        max_generation = filtered_df[column].max()
+                        min_generation = filtered_df[column].min()
+                        
+                        st.markdown(f"""
+                        <div style="
+                            background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+                            padding: 1.25rem;
+                            border-radius: 12px;
+                            margin: 0.75rem 0;
+                            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+                            border: 1px solid #3a3a3a;
+                            position: relative;
+                            overflow: hidden;
+                        ">
+                            <div style="
+                                background: rgba(255,255,255,0.05);
+                                padding: 0.5rem;
+                                border-radius: 8px;
+                                margin-bottom: 1rem;
+                                border: 1px solid #4a4a4a;
+                            ">
+                                <h4 style="
+                                    margin: 0;
+                                    font-size: 1.1rem;
+                                    color: #e0e0e0;
+                                    font-weight: 700;
+                                    text-align: center;
+                                ">{column.replace('generation fossil ', '').title()}</h4>
+                            </div>
+                            <div style="
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 0.75rem;
+                                margin-bottom: 0.75rem;
+                            ">
+                                <div style="
+                                    background: rgba(255,255,255,0.08);
+                                    padding: 0.75rem;
+                                    border-radius: 8px;
+                                    text-align: center;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_generation:.1f}</p>
+                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg (MW)</p>
+                                </div>
+                                <div style="
+                                    background: rgba(255,255,255,0.08);
+                                    padding: 0.75rem;
+                                    border-radius: 8px;
+                                    text-align: center;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_generation:.1f}</p>
+                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total (MW)</p>
+                                </div>
+                            </div>
+                            <div style="
+                                display: flex;
+                                justify-content: space-between;
+                                background: rgba(255,255,255,0.05);
+                                padding: 0.5rem;
+                                border-radius: 6px;
+                                border: 1px solid #4a4a4a;
+                            ">
+                                <div style="text-align: center;">
+                                    <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
+                                    <br>
+                                    <span style="font-size: 0.8rem; color: #cccccc;">{max_generation:.1f}</span>
+                                </div>
+                                <div style="text-align: center;">
+                                    <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
+                                    <br>
+                                    <span style="font-size: 0.8rem; color: #cccccc;">{min_generation:.1f}</span>
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+            else:
+                # For more than 3, use a scrollable container with fixed height
+                st.markdown("""
+                <style>
+                .metrics-container {
+                    max-height: 500px;
+                    overflow-y: auto;
+                    padding: 1rem;
+                    background: linear-gradient(135deg, #667eea, #764ba2);
+                    border-radius: 12px;
+                    border: 1px solid rgba(255,255,255,0.2);
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
+                # Group into rows of 3
+                for i in range(0, len(selected_columns), 3):
+                    group = selected_columns[i:i+3]
+                    cols = st.columns(len(group))
+                    
+                    for j, column in enumerate(group):
+                        with cols[j]:
+                            avg_generation = filtered_df[column].mean()
+                            total_generation = filtered_df[column].sum()
+                            max_generation = filtered_df[column].max()
+                            min_generation = filtered_df[column].min()
+                            
+                            st.markdown(f"""
+                            <div style="
+                                background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+                                padding: 1.25rem;
+                                border-radius: 12px;
+                                margin: 0.75rem 0;
+                                box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+                                border: 1px solid #3a3a3a;
+                                position: relative;
+                                overflow: hidden;
+                            ">
+                                <div style="
+                                    background: rgba(255,255,255,0.05);
+                                    padding: 0.5rem;
+                                    border-radius: 8px;
+                                    margin-bottom: 1rem;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <h4 style="
+                                        margin: 0;
+                                        font-size: 1.1rem;
+                                        color: #e0e0e0;
+                                        font-weight: 700;
+                                        text-align: center;
+                                    ">{column.replace('generation fossil ', '').title()}</h4>
+                                </div>
+                                <div style="
+                                    display: grid;
+                                    grid-template-columns: 1fr 1fr;
+                                    gap: 0.75rem;
+                                    margin-bottom: 0.75rem;
+                                ">
+                                    <div style="
+                                        background: rgba(255,255,255,0.08);
+                                        padding: 0.75rem;
+                                        border-radius: 8px;
+                                        text-align: center;
+                                        border: 1px solid #4a4a4a;
+                                    ">
+                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_generation:.1f}</p>
+                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg (MW)</p>
+                                    </div>
+                                    <div style="
+                                        background: rgba(255,255,255,0.08);
+                                        padding: 0.75rem;
+                                        border-radius: 8px;
+                                        text-align: center;
+                                        border: 1px solid #4a4a4a;
+                                    ">
+                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_generation:.1f}</p>
+                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total (MW)</p>
+                                    </div>
+                                </div>
+                                <div style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    background: rgba(255,255,255,0.05);
+                                    padding: 0.5rem;
+                                    border-radius: 6px;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <div style="text-align: center;">
+                                        <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
+                                        <br>
+                                        <span style="font-size: 0.8rem; color: #cccccc;">{max_generation:.1f}</span>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
+                                        <br>
+                                        <span style="font-size: 0.8rem; color: #cccccc;">{min_generation:.1f}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
     
     else:  # Fossil Fuel Dependency
         st.markdown('<h2 class="section-header">🛢️ Fossil Fuel Dependency Analysis</h2>', unsafe_allow_html=True)
         
-        # Combine all data for seasonal analysis
-        combined_data = load_data.merge(renewable_data, on='Date').merge(non_renewable_data, on='Date')
+        # Chart type selection
+        col1, col2 = st.columns(2)
+        with col1:
+            chart_type = st.selectbox("Chart Type:", ["Bar Chart", "Pie Chart", "Heatmap"], key="fossil_chart")
+        with col2:
+            analysis_type = st.selectbox("Analysis Type:", ["Dependency Percentages", "Average Values", "Count Analysis"], key="fossil_analysis")
         
-        # Add season column
-        combined_data['Month'] = combined_data['Date'].dt.month
-        combined_data['Season'] = combined_data['Month'].map({
-            12: 'Winter', 1: 'Winter', 2: 'Winter',
-            3: 'Spring', 4: 'Spring', 5: 'Spring',
-            6: 'Summer', 7: 'Summer', 8: 'Summer',
-            9: 'Fall', 10: 'Fall', 11: 'Fall'
-        })
+        # Get the fossil fuel dependency dataset
+        fossil_df = energy_data['fossil_fuel_dependency']
         
-        # Calculate fossil fuel dependency
-        combined_data['Fossil_Fuel'] = combined_data['Coal_Generation'] + combined_data['Natural_Gas_Generation'] + combined_data['Oil_Generation']
-        combined_data['Renewable_Total'] = combined_data['Solar_Generation'] + combined_data['Wind_Generation']
-        combined_data['Total_Generation'] = combined_data['Fossil_Fuel'] + combined_data['Renewable_Total'] + combined_data['Nuclear_Generation']
-        combined_data['Fossil_Dependency'] = (combined_data['Fossil_Fuel'] / combined_data['Total_Generation']) * 100
+        # Column selection based on analysis type
+        st.markdown('<h3 class="section-header">📋 Select Metrics</h3>', unsafe_allow_html=True)
         
-        # Seasonal dependency analysis
-        seasonal_dependency = combined_data.groupby('Season')['Fossil_Dependency'].mean().reset_index()
+        if analysis_type == "Dependency Percentages":
+            available_columns = ['fossilDependencyPercent', 'brownCoalPercent', 'coalGasPercent', 
+                               'naturalGasPercent', 'hardCoalPercent', 'oilPercent']
+            display_names = ['Fossil Dependency %', 'Brown Coal %', 'Coal Gas %', 
+                           'Natural Gas %', 'Hard Coal %', 'Oil %']
+        elif analysis_type == "Average Values":
+            available_columns = ['avgLoad', 'avgTotalFossil', 'avgTotalGeneration', 
+                               'avgBrownCoal', 'avgCoalGas', 'avgNaturalGas', 'avgHardCoal', 'avgOil', 'avgOilShale', 'avgPeat']
+            display_names = ['Avg Load', 'Avg Total Fossil', 'Avg Total Generation', 
+                           'Avg Brown Coal', 'Avg Coal Gas', 'Avg Natural Gas', 'Avg Hard Coal', 'Avg Oil', 'Avg Oil Shale', 'Avg Peat']
+        else:  # Count Analysis
+            available_columns = ['count']
+            display_names = ['Data Count']
         
-        fig_seasonal = px.bar(
-            seasonal_dependency,
-            x='Season',
-            y='Fossil_Dependency',
-            title='Fossil Fuel Dependency by Season',
-            color='Fossil_Dependency',
-            color_continuous_scale='Reds'
-        )
-        fig_seasonal.update_layout(
-            template='plotly_dark',
-            yaxis_title='Fossil Fuel Dependency (%)'
-        )
-        st.plotly_chart(fig_seasonal, use_container_width=True)
+        # Filter columns that exist in the dataset
+        existing_columns = [col for col in available_columns if col in fossil_df.columns]
+        existing_display_names = [display_names[i] for i, col in enumerate(available_columns) if col in fossil_df.columns]
         
-        # Monthly trend
-        monthly_trend = combined_data.groupby(combined_data['Date'].dt.month)['Fossil_Dependency'].mean().reset_index()
-        monthly_trend['Month_Name'] = monthly_trend['Date'].map({
-            1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
-            7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
-        })
+        if not existing_columns:
+            st.error("❌ No fossil fuel dependency columns found in the dataset.")
+            st.stop()
         
-        fig_monthly = px.line(
-            monthly_trend,
-            x='Month_Name',
-            y='Fossil_Dependency',
-            title='Monthly Fossil Fuel Dependency Trend',
-            markers=True
-        )
-        fig_monthly.update_layout(template='plotly_dark')
-        st.plotly_chart(fig_monthly, use_container_width=True)
+        # Initialize session state for selections
+        if 'fossil_selections' not in st.session_state:
+            st.session_state.fossil_selections = []
+        
+        # Add Select All and Clear All buttons
+        st.markdown("<br>", unsafe_allow_html=True)  # Add spacing to move buttons down
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+        with col1:
+            if st.button("Select All", key="select_all_fossil"):
+                st.session_state.fossil_selections = existing_columns.copy()
+                st.rerun()
+        with col2:
+            if st.button("Clear All", key="clear_all_fossil"):
+                st.session_state.fossil_selections = []
+                st.rerun()
+        with col3:
+            pass  # Empty column for symmetry
+        with col4:
+            pass  # Empty column for symmetry
+        
+        # Use a more organized grid layout for checkboxes
+        if len(existing_columns) <= 6:
+            # For 6 or fewer columns, use 3 columns
+            col1, col2, col3 = st.columns(3)
+            
+            for i, (column, display_name) in enumerate(zip(existing_columns, existing_display_names)):
+                with [col1, col2, col3][i % 3]:
+                    is_checked = column in st.session_state.fossil_selections
+                    if st.checkbox(display_name, 
+                                 value=is_checked, 
+                                 key=f"fossil_{i}"):
+                        if column not in st.session_state.fossil_selections:
+                            st.session_state.fossil_selections.append(column)
+                    else:
+                        if column in st.session_state.fossil_selections:
+                            st.session_state.fossil_selections.remove(column)
+        else:
+            # For more than 6 columns, use 4 columns
+            col1, col2, col3, col4 = st.columns(4)
+            
+            for i, (column, display_name) in enumerate(zip(existing_columns, existing_display_names)):
+                with [col1, col2, col3, col4][i % 4]:
+                    is_checked = column in st.session_state.fossil_selections
+                    if st.checkbox(display_name, 
+                                 value=is_checked, 
+                                 key=f"fossil_{i}"):
+                        if column not in st.session_state.fossil_selections:
+                            st.session_state.fossil_selections.append(column)
+                    else:
+                        if column in st.session_state.fossil_selections:
+                            st.session_state.fossil_selections.remove(column)
+        
+        selected_columns = st.session_state.fossil_selections
+        
+        if not selected_columns:
+            st.warning("⚠️ Please select at least one metric to analyze.")
+            st.stop()
+        
+        # Create visualizations
+        if chart_type == "Bar Chart":
+            fig = go.Figure()
+            
+            for column in selected_columns:
+                display_name = existing_display_names[existing_columns.index(column)]
+                fig.add_trace(go.Bar(
+                    x=fossil_df['time'],
+                    y=fossil_df[column],
+                    name=display_name,
+                    text=fossil_df[column].round(2),
+                    textposition='auto'
+                ))
+            
+            fig.update_layout(
+                title=f'Fossil Fuel Dependency - {analysis_type} (Bar Chart)',
+                xaxis_title='Season & Load Level',
+                yaxis_title='Value',
+                template='plotly_dark',
+                barmode='group'
+            )
+            
+        elif chart_type == "Pie Chart":
+            # Calculate average values across all seasons for each selected column
+            fig = go.Figure()
+            
+            for column in selected_columns:
+                display_name = existing_display_names[existing_columns.index(column)]
+                avg_value = fossil_df[column].mean()
+                
+                fig.add_trace(go.Pie(
+                    labels=[display_name],
+                    values=[avg_value],
+                    name=display_name,
+                    hole=0.3
+                ))
+            
+            fig.update_layout(
+                title=f'Average Fossil Fuel Dependency - {analysis_type}',
+                template='plotly_dark'
+            )
+            
+        else:  # Heatmap
+            # Create a heatmap of selected columns across all time periods
+            heatmap_data = fossil_df[selected_columns].values
+            heatmap_labels = [existing_display_names[existing_columns.index(col)] for col in selected_columns]
+            
+            # Convert to numpy array and round the values
+            heatmap_data_np = np.array(heatmap_data)
+            heatmap_data_rounded = np.round(heatmap_data_np, 2)
+            
+            fig = go.Figure(data=go.Heatmap(
+                z=heatmap_data_rounded,
+                x=heatmap_labels,
+                y=fossil_df['time'],
+                colorscale='Viridis',
+                text=heatmap_data_rounded,
+                texttemplate="%{text}",
+                textfont={"size": 10},
+                hoverongaps=False
+            ))
+            
+            fig.update_layout(
+                title=f'Fossil Fuel Dependency Heatmap - {analysis_type}',
+                xaxis_title='Metrics',
+                yaxis_title='Season & Load Level',
+                template='plotly_dark'
+            )
+        
+        st.plotly_chart(fig, use_container_width=True)
         
         # Summary statistics
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Avg Fossil Dependency", f"{combined_data['Fossil_Dependency'].mean():.1f}%")
-        with col2:
-            st.metric("Highest Season", f"{seasonal_dependency.loc[seasonal_dependency['Fossil_Dependency'].idxmax(), 'Season']}")
-        with col3:
-            st.metric("Lowest Season", f"{seasonal_dependency.loc[seasonal_dependency['Fossil_Dependency'].idxmin(), 'Season']}")
-        with col4:
-            st.metric("Seasonal Variation", f"{seasonal_dependency['Fossil_Dependency'].max() - seasonal_dependency['Fossil_Dependency'].min():.1f}%")
+        st.markdown('<h3 class="section-header">📊 Summary Statistics</h3>', unsafe_allow_html=True)
+        
+        # Use expandable sections for better organization
+        with st.expander("📈 View Summary Statistics", expanded=True):
+            # Create a responsive grid layout
+            if len(selected_columns) <= 3:
+                # For 3 or fewer, use columns
+                cols = st.columns(len(selected_columns))
+                for i, column in enumerate(selected_columns):
+                    with cols[i]:
+                        avg_value = fossil_df[column].mean()
+                        total_value = fossil_df[column].sum()
+                        max_value = fossil_df[column].max()
+                        min_value = fossil_df[column].min()
+                        display_name = existing_display_names[existing_columns.index(column)]
+                        
+                        st.markdown(f"""
+                        <div style="
+                            background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+                            padding: 1.25rem;
+                            border-radius: 12px;
+                            margin: 0.75rem 0;
+                            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+                            border: 1px solid #3a3a3a;
+                            position: relative;
+                            overflow: hidden;
+                        ">
+                            <div style="
+                                background: rgba(255,255,255,0.05);
+                                padding: 0.5rem;
+                                border-radius: 8px;
+                                margin-bottom: 1rem;
+                                border: 1px solid #4a4a4a;
+                            ">
+                                <h4 style="
+                                    margin: 0;
+                                    font-size: 1.1rem;
+                                    color: #e0e0e0;
+                                    font-weight: 700;
+                                    text-align: center;
+                                ">{display_name}</h4>
+                            </div>
+                            <div style="
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 0.75rem;
+                                margin-bottom: 0.75rem;
+                            ">
+                                <div style="
+                                    background: rgba(255,255,255,0.08);
+                                    padding: 0.75rem;
+                                    border-radius: 8px;
+                                    text-align: center;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_value:.1f}</p>
+                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg</p>
+                                </div>
+                                <div style="
+                                    background: rgba(255,255,255,0.08);
+                                    padding: 0.75rem;
+                                    border-radius: 8px;
+                                    text-align: center;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_value:.1f}</p>
+                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total</p>
+                                </div>
+                            </div>
+                            <div style="
+                                display: flex;
+                                justify-content: space-between;
+                                background: rgba(255,255,255,0.05);
+                                padding: 0.5rem;
+                                border-radius: 6px;
+                                border: 1px solid #4a4a4a;
+                            ">
+                                <div style="text-align: center;">
+                                    <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
+                                    <br>
+                                    <span style="font-size: 0.8rem; color: #cccccc;">{max_value:.1f}</span>
+                                </div>
+                                <div style="text-align: center;">
+                                    <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
+                                    <br>
+                                    <span style="font-size: 0.8rem; color: #cccccc;">{min_value:.1f}</span>
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+            else:
+                # For more than 3, use a scrollable container with fixed height
+                st.markdown("""
+                <style>
+                .metrics-container {
+                    max-height: 500px;
+                    overflow-y: auto;
+                    padding: 1rem;
+                    background: linear-gradient(135deg, #667eea, #764ba2);
+                    border-radius: 12px;
+                    border: 1px solid rgba(255,255,255,0.2);
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
+                # Group into rows of 3
+                for i in range(0, len(selected_columns), 3):
+                    group = selected_columns[i:i+3]
+                    cols = st.columns(len(group))
+                    
+                    for j, column in enumerate(group):
+                        with cols[j]:
+                            avg_value = fossil_df[column].mean()
+                            total_value = fossil_df[column].sum()
+                            max_value = fossil_df[column].max()
+                            min_value = fossil_df[column].min()
+                            display_name = existing_display_names[existing_columns.index(column)]
+                            
+                            st.markdown(f"""
+                            <div style="
+                                background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+                                padding: 1.25rem;
+                                border-radius: 12px;
+                                margin: 0.75rem 0;
+                                box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+                                border: 1px solid #3a3a3a;
+                                position: relative;
+                                overflow: hidden;
+                            ">
+                                <div style="
+                                    background: rgba(255,255,255,0.05);
+                                    padding: 0.5rem;
+                                    border-radius: 8px;
+                                    margin-bottom: 1rem;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <h4 style="
+                                        margin: 0;
+                                        font-size: 1.1rem;
+                                        color: #e0e0e0;
+                                        font-weight: 700;
+                                        text-align: center;
+                                    ">{display_name}</h4>
+                                </div>
+                                <div style="
+                                    display: grid;
+                                    grid-template-columns: 1fr 1fr;
+                                    gap: 0.75rem;
+                                    margin-bottom: 0.75rem;
+                                ">
+                                    <div style="
+                                        background: rgba(255,255,255,0.08);
+                                        padding: 0.75rem;
+                                        border-radius: 8px;
+                                        text-align: center;
+                                        border: 1px solid #4a4a4a;
+                                    ">
+                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_value:.1f}</p>
+                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg</p>
+                                    </div>
+                                    <div style="
+                                        background: rgba(255,255,255,0.08);
+                                        padding: 0.75rem;
+                                        border-radius: 8px;
+                                        text-align: center;
+                                        border: 1px solid #4a4a4a;
+                                    ">
+                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_value:.1f}</p>
+                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total</p>
+                                    </div>
+                                </div>
+                                <div style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    background: rgba(255,255,255,0.05);
+                                    padding: 0.5rem;
+                                    border-radius: 6px;
+                                    border: 1px solid #4a4a4a;
+                                ">
+                                    <div style="text-align: center;">
+                                        <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
+                                        <br>
+                                        <span style="font-size: 0.8rem; color: #cccccc;">{max_value:.1f}</span>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
+                                        <br>
+                                        <span style="font-size: 0.8rem; color: #cccccc;">{min_value:.1f}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
 
 
 # ML ANALYSIS PAGE
@@ -474,13 +1490,36 @@ elif page == "👾 ML Analysis":
     # Time range selection
     col1, col2 = st.columns(2)
     with col1:
-        start_date = st.date_input("Start Date", datetime(2024, 1, 1))
+        start_date = st.date_input("Start Date", datetime(2015, 1, 1))
     with col2:
-        end_date = st.date_input("End Date", datetime(2024, 12, 31))
+        end_date = st.date_input("End Date", datetime(2018, 12, 31))
+    
+    # Validate date range for ML Analysis
+    min_date = datetime(2015, 1, 1).date()
+    max_date = datetime(2018, 12, 31).date()
+    
+    if start_date < min_date or end_date > max_date or start_date > max_date or end_date < min_date:
+        st.markdown("""
+        <div style="background-color: #ff4444; color: white; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+            <strong>⚠️ Invalid Date Range</strong><br>
+            Please choose dates between <strong>01/01/2015</strong> and <strong>31/12/2018</strong>
+        </div>
+        """, unsafe_allow_html=True)
+        st.stop()
+    
+    # Validate that start_date is before end_date
+    if start_date >= end_date:
+        st.markdown("""
+        <div style="background-color: #ff4444; color: white; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+            <strong>⚠️ Invalid Date Range</strong><br>
+            Start date must be <strong>before</strong> end date
+        </div>
+        """, unsafe_allow_html=True)
+        st.stop()
     
     # Filter data based on date range
-    mask = (load_data['Date'] >= pd.to_datetime(start_date)) & (load_data['Date'] <= pd.to_datetime(end_date))
-    filtered_data = load_data.loc[mask]
+    mask = (ml_load_data['Date'] >= pd.to_datetime(start_date)) & (ml_load_data['Date'] <= pd.to_datetime(end_date))
+    filtered_data = ml_load_data.loc[mask]
     
     # Actual vs Predicted Plot
     st.markdown('<h2 class="section-header">📈 Actual vs Predicted Analysis</h2>', unsafe_allow_html=True)
