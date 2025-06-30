@@ -136,23 +136,23 @@ def load_energy_data():
         st.error(f"Error loading data files: {e}")
         return None
 
-# Generate sample data for ML analysis
-@st.cache_data
-def generate_sample_ml_data():
-    # Generate sample load forecast data
-    dates = pd.date_range(start='2015-01-01', end='2018-12-31', freq='D')
-    load_data = pd.DataFrame({
-        'Date': dates,
-        'Actual_Load': np.random.normal(1000, 200, len(dates)) + 100 * np.sin(np.arange(len(dates)) * 2 * np.pi / 365),
-        'Predicted_Load': np.random.normal(1000, 180, len(dates)) + 100 * np.sin(np.arange(len(dates)) * 2 * np.pi / 365),
-        'Temperature': np.random.normal(20, 10, len(dates)),
-        'Humidity': np.random.uniform(30, 90, len(dates))
-    })
-    return load_data
+# # Generate sample data for ML analysis
+# @st.cache_data
+# def generate_sample_ml_data():
+#     # Generate sample load forecast data
+#     dates = pd.date_range(start='2015-01-01', end='2018-12-31', freq='D')
+#     load_data = pd.DataFrame({
+#         'Date': dates,
+#         'Actual_Load': np.random.normal(1000, 200, len(dates)) + 100 * np.sin(np.arange(len(dates)) * 2 * np.pi / 365),
+#         'Predicted_Load': np.random.normal(1000, 180, len(dates)) + 100 * np.sin(np.arange(len(dates)) * 2 * np.pi / 365),
+#         'Temperature': np.random.normal(20, 10, len(dates)),
+#         'Humidity': np.random.uniform(30, 90, len(dates))
+#     })
+#     return load_data
 
 # Load data
 energy_data = load_energy_data()
-ml_load_data = generate_sample_ml_data()
+ml_load_data = pd.read_csv('./data/forecast.csv')
 
 # Define renewable energy columns
 RENEWABLE_COLUMNS = [
@@ -510,196 +510,45 @@ elif page == "📊 Data Analysis":
         
         # Summary statistics
         st.markdown('<h3 class="section-header">📊 Summary Statistics</h3>', unsafe_allow_html=True)
-        
-        # Use expandable sections for better organization
         with st.expander("📈 View Summary Statistics", expanded=True):
-            # Create a responsive grid layout
-            if len(selected_columns) <= 3:
-                # For 3 or fewer, use columns
-                cols = st.columns(len(selected_columns))
-                for i, column in enumerate(selected_columns):
-                    with cols[i]:
-                        avg_generation = filtered_df[column].mean()
-                        total_generation = filtered_df[column].sum()
-                        max_generation = filtered_df[column].max()
-                        min_generation = filtered_df[column].min()
-                        
-                        st.markdown(f"""
-                        <div style="
-                            background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-                            padding: 1.25rem;
-                            border-radius: 12px;
-                            margin: 0.75rem 0;
-                            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-                            border: 1px solid #3a3a3a;
-                            position: relative;
-                            overflow: hidden;
-                        ">
-                            <div style="
-                                background: rgba(255,255,255,0.05);
-                                padding: 0.5rem;
-                                border-radius: 8px;
-                                margin-bottom: 1rem;
-                                border: 1px solid #4a4a4a;
-                            ">
-                                <h4 style="
-                                    margin: 0;
-                                    font-size: 1.1rem;
-                                    color: #e0e0e0;
-                                    font-weight: 700;
-                                    text-align: center;
-                                ">{column.replace('generation ', '').title()}</h4>
+            cols = st.columns(len(selected_columns))
+            for i, column in enumerate(selected_columns):
+                with cols[i]:
+                    avg_generation = filtered_df[column].mean()
+                    total_generation = filtered_df[column].sum()
+                    max_generation = filtered_df[column].max()
+                    min_generation = filtered_df[column].min()
+                    st.markdown(f"""
+                    <div style='background: #23272f; border: 1px solid #2d323b; border-radius: 8px; padding: 1rem; margin: 0.5rem 0;'>
+                        <div style='text-align: center; font-size: 1.1rem; color: #f5f6fa; font-weight: 600; margin-bottom: 0.5rem;'>
+                            {column.replace('generation ', '').replace('generation fossil ', '').title()}
+                        </div>
+                        <div style='display: flex; justify-content: space-between;'>
+                            <div style='text-align: center;'>
+                                <span style='font-size: 1.2rem; color: #00b894; font-weight: bold;'>{avg_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>Avg</span>
                             </div>
-                            <div style="
-                                display: grid;
-                                grid-template-columns: 1fr 1fr;
-                                gap: 0.75rem;
-                                margin-bottom: 0.75rem;
-                            ">
-                                <div style="
-                                    background: rgba(255,255,255,0.08);
-                                    padding: 0.75rem;
-                                    border-radius: 8px;
-                                    text-align: center;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_generation:.1f}</p>
-                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg (MW)</p>
-                                </div>
-                                <div style="
-                                    background: rgba(255,255,255,0.08);
-                                    padding: 0.75rem;
-                                    border-radius: 8px;
-                                    text-align: center;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_generation:.1f}</p>
-                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total (MW)</p>
-                                </div>
-                            </div>
-                            <div style="
-                                display: flex;
-                                justify-content: space-between;
-                                background: rgba(255,255,255,0.05);
-                                padding: 0.5rem;
-                                border-radius: 6px;
-                                border: 1px solid #4a4a4a;
-                            ">
-                                <div style="text-align: center;">
-                                    <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
-                                    <br>
-                                    <span style="font-size: 0.8rem; color: #cccccc;">{max_generation:.1f}</span>
-                                </div>
-                                <div style="text-align: center;">
-                                    <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
-                                    <br>
-                                    <span style="font-size: 0.8rem; color: #cccccc;">{min_generation:.1f}</span>
-                                </div>
+                            <div style='text-align: center;'>
+                                <span style='font-size: 1.2rem; color: #00b894; font-weight: bold;'>{total_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>Total</span>
                             </div>
                         </div>
-                        """, unsafe_allow_html=True)
-            else:
-                # For more than 3, use a scrollable container with fixed height
-                st.markdown("""
-                <style>
-                .metrics-container {
-                    max-height: 500px;
-                    overflow-y: auto;
-                    padding: 1rem;
-                    background: linear-gradient(135deg, #667eea, #764ba2);
-                    border-radius: 12px;
-                    border: 1px solid rgba(255,255,255,0.2);
-                    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-                }
-                </style>
-                """, unsafe_allow_html=True)
-                
-                # Group into rows of 3
-                for i in range(0, len(selected_columns), 3):
-                    group = selected_columns[i:i+3]
-                    cols = st.columns(len(group))
-                    
-                    for j, column in enumerate(group):
-                        with cols[j]:
-                            avg_generation = filtered_df[column].mean()
-                            total_generation = filtered_df[column].sum()
-                            max_generation = filtered_df[column].max()
-                            min_generation = filtered_df[column].min()
-                            
-                            st.markdown(f"""
-                            <div style="
-                                background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-                                padding: 1.25rem;
-                                border-radius: 12px;
-                                margin: 0.75rem 0;
-                                box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-                                border: 1px solid #3a3a3a;
-                                position: relative;
-                                overflow: hidden;
-                            ">
-                                <div style="
-                                    background: rgba(255,255,255,0.05);
-                                    padding: 0.5rem;
-                                    border-radius: 8px;
-                                    margin-bottom: 1rem;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <h4 style="
-                                        margin: 0;
-                                        font-size: 1.1rem;
-                                        color: #e0e0e0;
-                                        font-weight: 700;
-                                        text-align: center;
-                                    ">{column.replace('generation ', '').title()}</h4>
-                                </div>
-                                <div style="
-                                    display: grid;
-                                    grid-template-columns: 1fr 1fr;
-                                    gap: 0.75rem;
-                                    margin-bottom: 0.75rem;
-                                ">
-                                    <div style="
-                                        background: rgba(255,255,255,0.08);
-                                        padding: 0.75rem;
-                                        border-radius: 8px;
-                                        text-align: center;
-                                        border: 1px solid #4a4a4a;
-                                    ">
-                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_generation:.1f}</p>
-                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg (MW)</p>
-                                    </div>
-                                    <div style="
-                                        background: rgba(255,255,255,0.08);
-                                        padding: 0.75rem;
-                                        border-radius: 8px;
-                                        text-align: center;
-                                        border: 1px solid #4a4a4a;
-                                    ">
-                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_generation:.1f}</p>
-                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total (MW)</p>
-                                    </div>
-                                </div>
-                                <div style="
-                                    display: flex;
-                                    justify-content: space-between;
-                                    background: rgba(255,255,255,0.05);
-                                    padding: 0.5rem;
-                                    border-radius: 6px;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <div style="text-align: center;">
-                                        <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
-                                        <br>
-                                        <span style="font-size: 0.8rem; color: #cccccc;">{max_generation:.1f}</span>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
-                                        <br>
-                                        <span style="font-size: 0.8rem; color: #cccccc;">{min_generation:.1f}</span>
-                                    </div>
-                                </div>
+                        <div style='display: flex; justify-content: space-between; margin-top: 0.5rem;'>
+                            <div style='text-align: center;'>
+                                <span style='font-size: 0.9rem; color: #f5f6fa; font-weight: 500;'>Max</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>{max_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span>
                             </div>
-                            """, unsafe_allow_html=True)
+                            <div style='text-align: center;'>
+                                <span style='font-size: 0.9rem; color: #f5f6fa; font-weight: 500;'>Min</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>{min_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
     
     elif analysis_type == "Non-Renewables":
         st.markdown('<h2 class="section-header">🏭 Non-Renewable Energy Analysis</h2>', unsafe_allow_html=True)
@@ -872,196 +721,45 @@ elif page == "📊 Data Analysis":
         
         # Summary statistics
         st.markdown('<h3 class="section-header">📊 Summary Statistics</h3>', unsafe_allow_html=True)
-        
-        # Use expandable sections for better organization
         with st.expander("📈 View Summary Statistics", expanded=True):
-            # Create a responsive grid layout
-            if len(selected_columns) <= 3:
-                # For 3 or fewer, use columns
-                cols = st.columns(len(selected_columns))
-                for i, column in enumerate(selected_columns):
-                    with cols[i]:
-                        avg_generation = filtered_df[column].mean()
-                        total_generation = filtered_df[column].sum()
-                        max_generation = filtered_df[column].max()
-                        min_generation = filtered_df[column].min()
-                        
-                        st.markdown(f"""
-                        <div style="
-                            background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-                            padding: 1.25rem;
-                            border-radius: 12px;
-                            margin: 0.75rem 0;
-                            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-                            border: 1px solid #3a3a3a;
-                            position: relative;
-                            overflow: hidden;
-                        ">
-                            <div style="
-                                background: rgba(255,255,255,0.05);
-                                padding: 0.5rem;
-                                border-radius: 8px;
-                                margin-bottom: 1rem;
-                                border: 1px solid #4a4a4a;
-                            ">
-                                <h4 style="
-                                    margin: 0;
-                                    font-size: 1.1rem;
-                                    color: #e0e0e0;
-                                    font-weight: 700;
-                                    text-align: center;
-                                ">{column.replace('generation fossil ', '').title()}</h4>
+            cols = st.columns(len(selected_columns))
+            for i, column in enumerate(selected_columns):
+                with cols[i]:
+                    avg_generation = filtered_df[column].mean()
+                    total_generation = filtered_df[column].sum()
+                    max_generation = filtered_df[column].max()
+                    min_generation = filtered_df[column].min()
+                    st.markdown(f"""
+                    <div style='background: #23272f; border: 1px solid #2d323b; border-radius: 8px; padding: 1rem; margin: 0.5rem 0;'>
+                        <div style='text-align: center; font-size: 1.1rem; color: #f5f6fa; font-weight: 600; margin-bottom: 0.5rem;'>
+                            {column.replace('generation fossil ', '').replace('generation ', '').title()}
+                        </div>
+                        <div style='display: flex; justify-content: space-between;'>
+                            <div style='text-align: center;'>
+                                <span style='font-size: 1.2rem; color: #00b894; font-weight: bold;'>{avg_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>Avg</span>
                             </div>
-                            <div style="
-                                display: grid;
-                                grid-template-columns: 1fr 1fr;
-                                gap: 0.75rem;
-                                margin-bottom: 0.75rem;
-                            ">
-                                <div style="
-                                    background: rgba(255,255,255,0.08);
-                                    padding: 0.75rem;
-                                    border-radius: 8px;
-                                    text-align: center;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_generation:.1f}</p>
-                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg (MW)</p>
-                                </div>
-                                <div style="
-                                    background: rgba(255,255,255,0.08);
-                                    padding: 0.75rem;
-                                    border-radius: 8px;
-                                    text-align: center;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_generation:.1f}</p>
-                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total (MW)</p>
-                                </div>
-                            </div>
-                            <div style="
-                                display: flex;
-                                justify-content: space-between;
-                                background: rgba(255,255,255,0.05);
-                                padding: 0.5rem;
-                                border-radius: 6px;
-                                border: 1px solid #4a4a4a;
-                            ">
-                                <div style="text-align: center;">
-                                    <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
-                                    <br>
-                                    <span style="font-size: 0.8rem; color: #cccccc;">{max_generation:.1f}</span>
-                                </div>
-                                <div style="text-align: center;">
-                                    <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
-                                    <br>
-                                    <span style="font-size: 0.8rem; color: #cccccc;">{min_generation:.1f}</span>
-                                </div>
+                            <div style='text-align: center;'>
+                                <span style='font-size: 1.2rem; color: #00b894; font-weight: bold;'>{total_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>Total</span>
                             </div>
                         </div>
-                        """, unsafe_allow_html=True)
-            else:
-                # For more than 3, use a scrollable container with fixed height
-                st.markdown("""
-                <style>
-                .metrics-container {
-                    max-height: 500px;
-                    overflow-y: auto;
-                    padding: 1rem;
-                    background: linear-gradient(135deg, #667eea, #764ba2);
-                    border-radius: 12px;
-                    border: 1px solid rgba(255,255,255,0.2);
-                    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-                }
-                </style>
-                """, unsafe_allow_html=True)
-                
-                # Group into rows of 3
-                for i in range(0, len(selected_columns), 3):
-                    group = selected_columns[i:i+3]
-                    cols = st.columns(len(group))
-                    
-                    for j, column in enumerate(group):
-                        with cols[j]:
-                            avg_generation = filtered_df[column].mean()
-                            total_generation = filtered_df[column].sum()
-                            max_generation = filtered_df[column].max()
-                            min_generation = filtered_df[column].min()
-                            
-                            st.markdown(f"""
-                            <div style="
-                                background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-                                padding: 1.25rem;
-                                border-radius: 12px;
-                                margin: 0.75rem 0;
-                                box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-                                border: 1px solid #3a3a3a;
-                                position: relative;
-                                overflow: hidden;
-                            ">
-                                <div style="
-                                    background: rgba(255,255,255,0.05);
-                                    padding: 0.5rem;
-                                    border-radius: 8px;
-                                    margin-bottom: 1rem;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <h4 style="
-                                        margin: 0;
-                                        font-size: 1.1rem;
-                                        color: #e0e0e0;
-                                        font-weight: 700;
-                                        text-align: center;
-                                    ">{column.replace('generation fossil ', '').title()}</h4>
-                                </div>
-                                <div style="
-                                    display: grid;
-                                    grid-template-columns: 1fr 1fr;
-                                    gap: 0.75rem;
-                                    margin-bottom: 0.75rem;
-                                ">
-                                    <div style="
-                                        background: rgba(255,255,255,0.08);
-                                        padding: 0.75rem;
-                                        border-radius: 8px;
-                                        text-align: center;
-                                        border: 1px solid #4a4a4a;
-                                    ">
-                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_generation:.1f}</p>
-                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg (MW)</p>
-                                    </div>
-                                    <div style="
-                                        background: rgba(255,255,255,0.08);
-                                        padding: 0.75rem;
-                                        border-radius: 8px;
-                                        text-align: center;
-                                        border: 1px solid #4a4a4a;
-                                    ">
-                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_generation:.1f}</p>
-                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total (MW)</p>
-                                    </div>
-                                </div>
-                                <div style="
-                                    display: flex;
-                                    justify-content: space-between;
-                                    background: rgba(255,255,255,0.05);
-                                    padding: 0.5rem;
-                                    border-radius: 6px;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <div style="text-align: center;">
-                                        <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
-                                        <br>
-                                        <span style="font-size: 0.8rem; color: #cccccc;">{max_generation:.1f}</span>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
-                                        <br>
-                                        <span style="font-size: 0.8rem; color: #cccccc;">{min_generation:.1f}</span>
-                                    </div>
-                                </div>
+                        <div style='display: flex; justify-content: space-between; margin-top: 0.5rem;'>
+                            <div style='text-align: center;'>
+                                <span style='font-size: 0.9rem; color: #f5f6fa; font-weight: 500;'>Max</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>{max_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span>
                             </div>
-                            """, unsafe_allow_html=True)
+                            <div style='text-align: center;'>
+                                <span style='font-size: 0.9rem; color: #f5f6fa; font-weight: 500;'>Min</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>{min_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
     
     else:  # Fossil Fuel Dependency
         st.markdown('<h2 class="section-header">🛢️ Fossil Fuel Dependency Analysis</h2>', unsafe_allow_html=True)
@@ -1232,198 +930,46 @@ elif page == "📊 Data Analysis":
         
         # Summary statistics
         st.markdown('<h3 class="section-header">📊 Summary Statistics</h3>', unsafe_allow_html=True)
-        
-        # Use expandable sections for better organization
         with st.expander("📈 View Summary Statistics", expanded=True):
-            # Create a responsive grid layout
-            if len(selected_columns) <= 3:
-                # For 3 or fewer, use columns
-                cols = st.columns(len(selected_columns))
-                for i, column in enumerate(selected_columns):
-                    with cols[i]:
-                        avg_value = fossil_df[column].mean()
-                        total_value = fossil_df[column].sum()
-                        max_value = fossil_df[column].max()
-                        min_value = fossil_df[column].min()
-                        display_name = existing_display_names[existing_columns.index(column)]
-                        
-                        st.markdown(f"""
-                        <div style="
-                            background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-                            padding: 1.25rem;
-                            border-radius: 12px;
-                            margin: 0.75rem 0;
-                            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-                            border: 1px solid #3a3a3a;
-                            position: relative;
-                            overflow: hidden;
-                        ">
-                            <div style="
-                                background: rgba(255,255,255,0.05);
-                                padding: 0.5rem;
-                                border-radius: 8px;
-                                margin-bottom: 1rem;
-                                border: 1px solid #4a4a4a;
-                            ">
-                                <h4 style="
-                                    margin: 0;
-                                    font-size: 1.1rem;
-                                    color: #e0e0e0;
-                                    font-weight: 700;
-                                    text-align: center;
-                                ">{display_name}</h4>
+            cols = st.columns(len(selected_columns))
+            for i, column in enumerate(selected_columns):
+                with cols[i]:
+                    avg_generation = fossil_df[column].mean()
+                    total_generation = fossil_df[column].sum()
+                    max_generation = fossil_df[column].max()
+                    min_generation = fossil_df[column].min()
+                    display_name = existing_display_names[existing_columns.index(column)]
+                    st.markdown(f"""
+                    <div style='background: #23272f; border: 1px solid #2d323b; border-radius: 8px; padding: 1rem; margin: 0.5rem 0;'>
+                        <div style='text-align: center; font-size: 1.1rem; color: #f5f6fa; font-weight: 600; margin-bottom: 0.5rem;'>
+                            {display_name}
+                        </div>
+                        <div style='display: flex; justify-content: space-between;'>
+                            <div style='text-align: center;'>
+                                <span style='font-size: 1.2rem; color: #00b894; font-weight: bold;'>{avg_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>Avg</span>
                             </div>
-                            <div style="
-                                display: grid;
-                                grid-template-columns: 1fr 1fr;
-                                gap: 0.75rem;
-                                margin-bottom: 0.75rem;
-                            ">
-                                <div style="
-                                    background: rgba(255,255,255,0.08);
-                                    padding: 0.75rem;
-                                    border-radius: 8px;
-                                    text-align: center;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_value:.1f}</p>
-                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg</p>
-                                </div>
-                                <div style="
-                                    background: rgba(255,255,255,0.08);
-                                    padding: 0.75rem;
-                                    border-radius: 8px;
-                                    text-align: center;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_value:.1f}</p>
-                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total</p>
-                                </div>
-                            </div>
-                            <div style="
-                                display: flex;
-                                justify-content: space-between;
-                                background: rgba(255,255,255,0.05);
-                                padding: 0.5rem;
-                                border-radius: 6px;
-                                border: 1px solid #4a4a4a;
-                            ">
-                                <div style="text-align: center;">
-                                    <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
-                                    <br>
-                                    <span style="font-size: 0.8rem; color: #cccccc;">{max_value:.1f}</span>
-                                </div>
-                                <div style="text-align: center;">
-                                    <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
-                                    <br>
-                                    <span style="font-size: 0.8rem; color: #cccccc;">{min_value:.1f}</span>
-                                </div>
+                            <div style='text-align: center;'>
+                                <span style='font-size: 1.2rem; color: #00b894; font-weight: bold;'>{total_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>Total</span>
                             </div>
                         </div>
-                        """, unsafe_allow_html=True)
-            else:
-                # For more than 3, use a scrollable container with fixed height
-                st.markdown("""
-                <style>
-                .metrics-container {
-                    max-height: 500px;
-                    overflow-y: auto;
-                    padding: 1rem;
-                    background: linear-gradient(135deg, #667eea, #764ba2);
-                    border-radius: 12px;
-                    border: 1px solid rgba(255,255,255,0.2);
-                    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-                }
-                </style>
-                """, unsafe_allow_html=True)
-                
-                # Group into rows of 3
-                for i in range(0, len(selected_columns), 3):
-                    group = selected_columns[i:i+3]
-                    cols = st.columns(len(group))
-                    
-                    for j, column in enumerate(group):
-                        with cols[j]:
-                            avg_value = fossil_df[column].mean()
-                            total_value = fossil_df[column].sum()
-                            max_value = fossil_df[column].max()
-                            min_value = fossil_df[column].min()
-                            display_name = existing_display_names[existing_columns.index(column)]
-                            
-                            st.markdown(f"""
-                            <div style="
-                                background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-                                padding: 1.25rem;
-                                border-radius: 12px;
-                                margin: 0.75rem 0;
-                                box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-                                border: 1px solid #3a3a3a;
-                                position: relative;
-                                overflow: hidden;
-                            ">
-                                <div style="
-                                    background: rgba(255,255,255,0.05);
-                                    padding: 0.5rem;
-                                    border-radius: 8px;
-                                    margin-bottom: 1rem;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <h4 style="
-                                        margin: 0;
-                                        font-size: 1.1rem;
-                                        color: #e0e0e0;
-                                        font-weight: 700;
-                                        text-align: center;
-                                    ">{display_name}</h4>
-                                </div>
-                                <div style="
-                                    display: grid;
-                                    grid-template-columns: 1fr 1fr;
-                                    gap: 0.75rem;
-                                    margin-bottom: 0.75rem;
-                                ">
-                                    <div style="
-                                        background: rgba(255,255,255,0.08);
-                                        padding: 0.75rem;
-                                        border-radius: 8px;
-                                        text-align: center;
-                                        border: 1px solid #4a4a4a;
-                                    ">
-                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #4CAF50;">{avg_value:.1f}</p>
-                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Avg</p>
-                                    </div>
-                                    <div style="
-                                        background: rgba(255,255,255,0.08);
-                                        padding: 0.75rem;
-                                        border-radius: 8px;
-                                        text-align: center;
-                                        border: 1px solid #4a4a4a;
-                                    ">
-                                        <p style="margin: 0; font-size: 1.3rem; font-weight: bold; color: #2196F3;">{total_value:.1f}</p>
-                                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #cccccc;">Total</p>
-                                    </div>
-                                </div>
-                                <div style="
-                                    display: flex;
-                                    justify-content: space-between;
-                                    background: rgba(255,255,255,0.05);
-                                    padding: 0.5rem;
-                                    border-radius: 6px;
-                                    border: 1px solid #4a4a4a;
-                                ">
-                                    <div style="text-align: center;">
-                                        <span style="font-size: 0.9rem; font-weight: bold; color: #FF9800;">Max</span>
-                                        <br>
-                                        <span style="font-size: 0.8rem; color: #cccccc;">{max_value:.1f}</span>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <span style="font-size: 0.9rem; font-weight: bold; color: #F44336;">Min</span>
-                                        <br>
-                                        <span style="font-size: 0.8rem; color: #cccccc;">{min_value:.1f}</span>
-                                    </div>
-                                </div>
+                        <div style='display: flex; justify-content: space-between; margin-top: 0.5rem;'>
+                            <div style='text-align: center;'>
+                                <span style='font-size: 0.9rem; color: #f5f6fa; font-weight: 500;'>Max</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>{max_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span>
                             </div>
-                            """, unsafe_allow_html=True)
+                            <div style='text-align: center;'>
+                                <span style='font-size: 0.9rem; color: #f5f6fa; font-weight: 500;'>Min</span><br>
+                                <span style='font-size: 0.8rem; color: #b2bec3;'>{min_generation:.2f}</span>
+                                <span style='font-size: 0.7rem; color: #b2bec3; margin-left: 2px;'>MWh</span>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
 
 # ML ANALYSIS PAGE
@@ -1478,7 +1024,8 @@ elif page == "👾 ML Analysis":
     with col1:
         forecast_type = st.selectbox(
             "Choose Forecast Type:",
-            ["Load Forecast", "Renewable Generation Forecast", "Peak Demand Forecast", "Seasonal Forecast"]
+            ["Load Forecast"],
+            # ["Load Forecast", "Renewable Generation Forecast", "Peak Demand Forecast", "Seasonal Forecast"]
         )
     
     with col2:
@@ -1518,6 +1065,16 @@ elif page == "👾 ML Analysis":
         st.stop()
     
     # Filter data based on date range
+    # mask = (ml_load_data['Date'] >= pd.to_datetime(start_date)) & (ml_load_data['Date'] <= pd.to_datetime(end_date))
+    # filtered_data = ml_load_data
+
+    # ml_load_data['Date'] = pd.to_datetime(ml_load_data['Date'], format='%d-%m-%y')
+    # ml_load_data = ml_load_data.sort_values('Date')
+    # filtered_data = ml_load_data  # (or your filtered version)
+
+    ml_load_data['Date'] = pd.to_datetime(ml_load_data['Date'], format='%d-%m-%y')
+    ml_load_data = ml_load_data.sort_values('Date')
+
     mask = (ml_load_data['Date'] >= pd.to_datetime(start_date)) & (ml_load_data['Date'] <= pd.to_datetime(end_date))
     filtered_data = ml_load_data.loc[mask]
     
@@ -1571,28 +1128,28 @@ elif page == "👾 ML Analysis":
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("RMSE", f"{rmse:.2f}", "MW")
+        st.metric("RMSE", f"{rmse:.2f}", "MWh")
     with col2:
-        st.metric("MAE", f"{mae:.2f}", "MW")
+        st.metric("MAE", f"{mae:.2f}", "MWh")
     with col3:
         st.metric("MAPE", f"{mape:.2f}", "%")
     with col4:
         st.metric("R² Score", f"{r2:.3f}", "")
     
-    # Correlation Matrix
-    st.markdown('<h2 class="section-header">🔗 Correlation Matrix</h2>', unsafe_allow_html=True)
+    # # Correlation Matrix
+    # st.markdown('<h2 class="section-header">🔗 Correlation Matrix</h2>', unsafe_allow_html=True)
     
-    corr_data = filtered_data[['Actual_Load', 'Predicted_Load', 'Temperature', 'Humidity']].corr()
+    # corr_data = filtered_data[['Actual_Load', 'Predicted_Load', 'Temperature', 'Humidity']].corr()
     
-    fig_corr = px.imshow(
-        corr_data,
-        text_auto=True,
-        aspect="auto",
-        color_continuous_scale='RdBu_r',
-        title="Feature Correlation Matrix"
-    )
-    fig_corr.update_layout(template='plotly_dark')
-    st.plotly_chart(fig_corr, use_container_width=True)
+    # fig_corr = px.imshow(
+    #     corr_data,
+    #     text_auto=True,
+    #     aspect="auto",
+    #     color_continuous_scale='RdBu_r',
+    #     title="Feature Correlation Matrix"
+    # )
+    # fig_corr.update_layout(template='plotly_dark')
+    # st.plotly_chart(fig_corr, use_container_width=True)
 
 
 # Footer
