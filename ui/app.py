@@ -52,6 +52,38 @@ st.markdown("""
         margin: 1rem 0;
     }
 
+    .info-box h2, .info-box h3 {
+        color: #e0e0e0;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .info-box h2:first-child {
+        margin-top: 0;
+    }
+
+    .info-box p {
+        color: #cccccc;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .info-box ul {
+        color: #cccccc;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+    }
+
+    .info-box li {
+        margin-bottom: 0.5rem;
+    }
+
+    .info-box strong {
+        color: #00b894;
+        font-weight: 600;
+    }
+
     .stSelectbox > div > div {
         background-color: #1e1e1e !important;
         border: 1px solid #3a3a3a !important;
@@ -210,33 +242,52 @@ page = st.sidebar.selectbox(
 )
 
 if page == "Home":
+    st.markdown('<h1 class="main-header">⚡ SPARK – Sustainable Power Analytics and Renewable Kinetics</h1>', unsafe_allow_html=True)
+    
+    # Project Overview Section
     st.markdown("""
-    <h1 class="main-header"> ⚡ SPARK – Sustainable Power Analytics and Renewable Kinetics</h1>
-
     <div class="info-box">
         <h2>Project Overview</h2>
         <p>
             This platform provides comprehensive tools for energy forecasting and deep analytics of both renewable and non-renewable energy sources, leveraging machine learning for sustainable power insights.
         </p>
-
-        <h3>Key Features</h3>
-        <ul>
-            <li><strong>Load Forecasting:</strong> Accurate energy demand prediction using ML algorithms.</li>
-            <li><strong>Renewable Energy Analysis:</strong> Insights into solar, wind, and other renewable sources.</li>
-            <li><strong>Non-Renewable Analysis:</strong> Evaluation of coal, gas, oil, and nuclear energy generation.</li>
-            <li><strong>Correlation Analysis:</strong> Examine interdependencies between key energy metrics.</li>
-            <li><strong>Seasonal Trends:</strong> Discover fossil fuel usage patterns across different seasons.</li>
-        </ul>
-
-        <h3>Objectives</h3>
-        <ul>
-            <li>Enhance grid efficiency through predictive analytics.</li>
-            <li>Encourage renewable adoption with actionable insights.</li>
-            <li>Reduce fossil dependency via informed planning.</li>
-            <li>Support energy policy with evidence-based analysis.</li>
-        </ul>
     </div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+    
+    # Key Features Section
+    st.markdown('<h3 style="color: #e0e0e0; margin-top: 1.5rem; margin-bottom: 0.5rem;">Key Features</h3>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        - **Load Forecasting:** Accurate energy demand prediction using ML algorithms
+        - **Renewable Energy Analysis:** Insights into solar, wind, and other renewable sources
+        - **Non-Renewable Analysis:** Evaluation of coal, gas, oil, and nuclear energy generation
+        """)
+    
+    with col2:
+        st.markdown("""
+        - **Correlation Analysis:** Examine interdependencies between key energy metrics
+        - **Seasonal Trends:** Discover fossil fuel usage patterns across different seasons
+        """)
+    
+    # Objectives Section
+    st.markdown('<h3 style="color: #e0e0e0; margin-top: 1.5rem; margin-bottom: 0.5rem;">Objectives</h3>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        - Enhance grid efficiency through predictive analytics
+        - Encourage renewable adoption with actionable insights
+        """)
+    
+    with col2:
+        st.markdown("""
+        - Reduce fossil dependency via informed planning
+        - Support energy policy with evidence-based analysis
+        """)
 
     # Stats Overview
     col1, col2, col3, col4 = st.columns(4)
