@@ -204,5 +204,9 @@ Since all the Mapreduce jobs have already been executed and final files stored, 
 streamlit run ui/testui.py
 ```
 
-Make sure to have [Open Hardware Monitor](https://openhardwaremonitor.org/) running in background with its remote we server enabled.
+Make sure to have [Open Hardware Monitor](https://openhardwaremonitor.org/) running in background with its remote web server enabled to get System Monitoring. If system monitoring isn't needed, run,
+```bash
+streamlit run ui/app.py
+```
+
 
