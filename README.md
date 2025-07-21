@@ -100,14 +100,13 @@ This document outlines the architecture of a big data processing environment con
 | **Apache Spark** | Reads the processed data files and performs ML operations |
 | **Jupyter (Driver Notebook)** | Interactive interface to trigger and monitor model training |
 
-#### Flow:
 6. Processed data files are sent to **Apache Spark**.
 7. Spark performs model training through the **Jupyter Notebook**.
 8. Trained models are saved locally to **Local Windows**.
 
 ---
 
-### 🌐 UI & Monitoring
+### UI & Monitoring
 
 | Component            | Description |
 |---------------------|-------------|
