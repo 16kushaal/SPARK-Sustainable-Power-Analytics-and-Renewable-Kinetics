@@ -115,7 +115,7 @@ SPARK-Sustainable-Power-Analytics-and-Renewable-Kinetics/
 ├── commands.txt       # Execution and helper commands
 ├── requirements.txt   # Python dependencies
 └── README.md          # You're here!
-
+```
 # 🚀 Tech Stack & Workflow Summary
 
 This document outlines the architecture of a big data processing environment containerized with Docker and details the command-line workflow for extracting processed data.
