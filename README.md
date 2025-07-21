@@ -195,3 +195,7 @@ Transfer the final CSV from the namenode container to the local Windows filesyst
 # Example for renewable energy data
 docker cp namenode:/root/renewable/monthlyenergy/rme.csv D:\VI\BDT\LABEL\mapreduce\renewable\monthlyenergy
 ```
+#### 5. ML Modelling and Analysis
+Refer to `ml-modelling` folder where models are built and saved in .joblibs format under `ml-modelling/model`.
+
+
