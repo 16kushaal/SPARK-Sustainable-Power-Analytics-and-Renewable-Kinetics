@@ -117,7 +117,6 @@ This document outlines the architecture of a big data processing environment con
 9. Local inferences and visuals are passed to **Streamlit UI**.
 10.  **OpenHardwareMonitor** logs system performance and passes it to **Streamlit UI**.
 ---
----
 ### How to run
 Since all the Mapreduce jobs have already been executed and final files stored, onyl part left out is the UI. To run it,
 ```bash
