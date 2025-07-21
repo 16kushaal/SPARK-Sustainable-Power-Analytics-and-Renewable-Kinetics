@@ -115,3 +115,83 @@ SPARK-Sustainable-Power-Analytics-and-Renewable-Kinetics/
 ├── commands.txt       # Execution and helper commands
 ├── requirements.txt   # Python dependencies
 └── README.md          # You're here!
+
+# 🚀 Tech Stack & Workflow Summary
+
+This document outlines the architecture of a big data processing environment containerized with Docker and details the command-line workflow for extracting processed data.
+
+---
+
+## 🛠️ Tech Stack Overview
+
+The environment is built on **Docker**, which isolates and manages two primary service stacks. This separation allows for **modularity** and **independent scaling** of the processing and analysis layers.
+
+---
+
+## 📦 Containerization & Orchestration
+
+- **Docker Desktop**: Core platform for running and managing the containerized applications on a local machine.
+- **Docker Compose**: Defines and orchestrates multi-container services. The setup consists of two distinct stacks:
+  - **Hadoop stack**: For distributed storage and batch processing.
+  - **Spark/Jupyter stack**: For interactive data analysis.
+
+---
+
+## 🐘 Big Data Frameworks
+
+### Apache Hadoop Stack (`docker-hadoop`)
+- **HDFS (Hadoop Distributed File System)**:  
+  Managed by the `namenode` and `datanode` containers. Provides resilient, distributed storage for large datasets.
+- **YARN (Yet Another Resource Negotiator)**:  
+  Managed by the `resourcemanager` and `nodemanager` containers. Handles job scheduling and resource management.
+- **MapReduce**:  
+  The primary framework for parallel processing of data stored in HDFS. Output files typically follow the `part-r-00000` naming convention.
+
+### Apache Spark Stack (`jupyter-spark`)
+- **Apache Spark**:  
+  Fast, in-memory data processing engine running in its own container. Interacts with HDFS for advanced analytics.
+- **Jupyter Notebook**:  
+  Web-based interface for writing and executing Python/PySpark code, ideal for exploratory data analysis.
+
+---
+
+## ⚙️ Data Processing Workflow
+
+The shell commands provided below demonstrate a repeatable process for extracting results of MapReduce jobs and preparing them for local analysis.
+
+---
+
+### Step-by-Step Data Extraction
+
+The workflow is executed for three datasets:
+- **Renewable Energy (rde)**
+- **Non-Renewable Energy (nrde)**
+- **Weekly Load Actuals (wla)**
+
+#### 1. Execute MapReduce Job *(Implicit Step)*
+A MapReduce job processes raw data and outputs results to HDFS directories:
+/labelout/rde/,
+/labelout/nrde/,
+/labelout/wla/.
+#### 2. Extract Raw Output from HDFS
+Use the `hdfs dfs -cat` command to read the `part-r-00000` file and write to a temporary local file inside the `namenode` container:
+
+```bash
+# Example for renewable energy data
+hdfs dfs -cat /labelout/rde/part-r-00000 > rde_raw.csv
+```
+#### 3. Prepend CSV Header
+
+Add a header row using `echo` and `cat`, creating a clean, final CSV file:
+
+```bash
+# Example for renewable energy data
+echo "time,generation biomass,..." | cat - rde_raw.csv > rme.csv
+```
+#### 4. Copy Final CSV to Host Machine
+Transfer the final CSV from the namenode container to the local Windows filesystem:
+
+```bash
+# Example for renewable energy data
+docker cp namenode:/root/renewable/monthlyenergy/rme.csv D:\VI\BDT\LABEL\mapreduce\renewable\monthlyenergy
+```
