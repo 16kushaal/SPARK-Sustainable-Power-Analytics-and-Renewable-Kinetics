@@ -423,9 +423,9 @@ def display_system_monitor():
     sensors = monitor.parse_sensors(data)
     cols = st.columns(4)
     with cols[0]: st.plotly_chart(create_gauge(sensors['cpu']['load'], "CPU Load", color='#6c5ce7'), use_container_width=True)
-    with cols[1]: st.plotly_chart(create_gauge(sensors['cpu']['temperature'], "CPU Temp", suffix='°C', color='#fd79a8'), use_container_width=True)
-    with cols[2]: st.plotly_chart(create_gauge(sensors['ram']['load'], "RAM Usage", color='#00cec9'), use_container_width=True)
-    with cols[3]: st.plotly_chart(create_gauge(sensors['storage']['used_space'], "Disk Usage", color='#fab1a0'), use_container_width=True)
+    with cols[1]: st.plotly_chart(create_gauge(sensors['cpu']['temperature'], "CPU Temp", suffix='°C', color="#f72e2e"), use_container_width=True)
+    with cols[2]: st.plotly_chart(create_gauge(sensors['ram']['load'], "RAM Usage", color="#0041ce"), use_container_width=True)
+    with cols[3]: st.plotly_chart(create_gauge(sensors['storage']['used_space'], "Disk Usage", color="#b9fc00"), use_container_width=True)
     st.markdown("<br>", unsafe_allow_html=True)
     cols = st.columns(4)
     with cols[0]:
