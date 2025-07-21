@@ -197,5 +197,12 @@ docker cp namenode:/root/renewable/monthlyenergy/rme.csv D:\VI\BDT\LABEL\mapredu
 ```
 #### 5. ML Modelling and Analysis
 Refer to `ml-modelling` folder where models are built and saved in .joblibs format under `ml-modelling/model`.
+---
+### How to run
+Since all the Mapreduce jobs have already been executed and final files stored, onyl part left out is the UI. To run it,
+```bash
+streamlit run ui/testui.py
+```
 
+Make sure to have [Open Hardware Monitor](https://openhardwaremonitor.org/) running in background with its remote we server enabled.
 
