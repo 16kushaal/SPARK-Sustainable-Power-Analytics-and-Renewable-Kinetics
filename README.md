@@ -117,6 +117,7 @@ This document outlines the architecture of a big data processing environment con
 10.  **OpenHardwareMonitor** logs system performance and passes it to **Streamlit UI**.
 ---
 ### How to run
+Make sure to install virtual env and under `requirements.txt` uncomment the commented packages.
 Since all the Mapreduce jobs have already been executed and final files stored, onyl part left out is the UI. To run it,
 ```bash
 streamlit run ui/testui.py
