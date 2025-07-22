@@ -6,7 +6,6 @@
 ---
 
 ## 📌 Overview
-
 **SPARK** is a scalable, modular, and extensible energy analytics platform designed for processing large-scale renewable energy datasets using the Hadoop MapReduce framework. It offers data analytics, machine learning-based forecasting, and energy trend insights in a fully modular setup.
 
 ---
