@@ -1,4 +1,5 @@
 # ⚡ SPARK — Sustainable Power Analytics and Renewable Kinetics
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://spark-sustainable-power-analytics-and-renewable-kinetics.streamlit.app)
 
 **Big Data Energy Analytics with Hadoop MapReduce and Apache Spark ML**
 
