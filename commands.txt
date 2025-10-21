@@ -13,3 +13,4 @@ echo "time,load actual" | cat - wla_raw.csv > wla.csv
 docker cp namenode:/root/LoadActual/weeklyload/wla.csv D:\VI\BDT\LABEL\mapreduce\LoadActual\weeklyload
 
 
+END OF PROJECT COMMIT - WILL TAKE UP SOMETIME LATER
